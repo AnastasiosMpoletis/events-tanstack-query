@@ -13,6 +13,8 @@ export default function NewEventsSection() {
   const { data, isPending, isError, error } = useQuery({
     queryKey: ['events'], // use it to help data caching
     queryFn: fetchEvents,
+    staleTime: 5000, // if we re-render the component within 5 seconds, no data will be fetched from cache. Default value: 0.
+    // gcTime: 30000, // garbage collector. How long the cache lasts. Cached data will be kept around for half a minute. Default value: 5 minutes.
   });
 
   let content;
