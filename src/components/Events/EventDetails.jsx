@@ -3,26 +3,82 @@ import { fetchEvent, deleteEvent, queryClient } from '../../util/http.js';
 import { useQuery, useMutation } from '@tanstack/react-query';
 
 import Header from '../Header.jsx';
+import ErrorBlock from '../UI/ErrorBlock.jsx';
 
 export default function EventDetails() {
+  const params = useParams();
   const navigate = useNavigate();
-  const params = useParams('id');
 
-  const { data, isPending } = useQuery({
-    queryKey: ['event'],
-    queryFn: () => fetchEvent(params),
+  const { data, isPending, isError, error } = useQuery({
+    queryKey: ['events', params.id],
+    queryFn: ({ signal }) => fetchEvent({ id: params.id, signal }),
   });
 
   const { mutate } = useMutation({
     mutationFn: deleteEvent,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['events'], // it will also invalidate the query in FindEventSection that has 'events' as an id along with other ids and similar queries with multiple ids
-        // exact: true, // in case we want to invalidate queries that have exactly that queryKey
+        queryKey: ['events'],
       });
       navigate('/events');
     },
   });
+
+  function handleDelete() {
+    mutate(params);
+  }
+
+  let content;
+
+  if (isPending) {
+    content = (
+      <div id="event-details-content" className="center">
+        <p>Fetching event data...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    content = (
+      <div id="event-details-content" className="center">
+        <ErrorBlock
+          title='Failed to load event'
+          message={error.info?.message || 'Failed to fetch event data. Please try again later.'}
+        />
+      </div>
+    );
+  }
+
+  if (data) {
+    const formattedDate = new Date(data.date).toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+
+    content = (
+      <>
+        <header>
+          <h1>{data.title}</h1>
+          <nav>
+            <button onClick={handleDelete}>Delete</button>
+            <Link to="edit">Edit</Link>
+          </nav>
+        </header>
+        <div id="event-details-content">
+          <img src={`http://localhost:3000/${data.image}`} alt={data.title} />
+          <div id="event-details-info">
+            <div>
+              <p id="event-details-location">{data.location}</p>
+              <time dateTime={`Todo-DateT$Todo-Time`}>{formattedDate} @ {data.time}</time>
+            </div>
+            <p id="event-details-description">{data.description}</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
 
   return (
     <>
@@ -33,31 +89,7 @@ export default function EventDetails() {
         </Link>
       </Header>
       <article id="event-details">
-
-        {isPending && <p>Loading event...</p>}
-
-        {!isPending && (
-          <>
-            <header>
-              <h1>{data.title}</h1>
-              <nav>
-                <button onClick={() => mutate(params)}>Delete</button>
-                <Link to="edit">Edit</Link>
-              </nav>
-            </header>
-            <div id="event-details-content">
-              <img src={`http://localhost:3000/${data.image}`} alt="event image" />
-              <div id="event-details-info">
-                <div>
-                  <p id="event-details-location">{data.location}</p>
-                  <time dateTime={`Todo-DateT$Todo-Time`}>{data.time}</time>
-                </div>
-                <p id="event-details-description">{data.description}</p>
-              </div>
-            </div>
-          </>
-        )}
-
+        {content}
       </article>
     </>
   );
