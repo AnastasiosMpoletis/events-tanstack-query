@@ -11,8 +11,12 @@ export default function NewEventsSection() {
    * Make sure to return an Error in fetchEvents, in case of an error.
    */
   const { data, isPending, isError, error } = useQuery({
-    queryKey: ['events'], // use it to help data caching
-    queryFn: fetchEvents,
+    queryKey: ['events', { max: 3 }], // use it to help data caching
+    /**
+     * queryFn automatically passes queryKey. We can use it to take max (spread element in array positon 1). 
+     * Use can use the same implementation in FindEventSection.
+     */
+    queryFn: ({ signal, queryKey }) => fetchEvents({ signal, ...queryKey[1] }),
     staleTime: 5000, // if we re-render the component within 5 seconds, no data will be fetched from cache. Default value: 0.
     // gcTime: 30000, // garbage collector. How long the cache lasts. Cached data will be kept around for half a minute. Default value: 5 minutes.
   });
