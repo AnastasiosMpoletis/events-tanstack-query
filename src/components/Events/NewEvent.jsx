@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 
 import Modal from '../UI/Modal.jsx';
 import EventForm from './EventForm.jsx';
-import { createNewEvent } from '../../util/http.js';
+import { createNewEvent, queryClient } from '../../util/http.js';
 import ErrorBlock from '../UI/ErrorBlock.jsx';
 
 export default function NewEvent() {
@@ -11,6 +11,13 @@ export default function NewEvent() {
 
   const { mutate, isPending, isError, error } = useMutation({
     mutationFn: createNewEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['events'], // it will also invalidate the query in FindEventSection that has 'events' as an id along with other ids and similar queries with multiple ids
+        // exact: true, // in case we want to invalidate queries that have exactly that queryKey
+      });
+      navigate('/events');
+    },
   });
 
   function handleSubmit(formData) {
